@@ -7,8 +7,8 @@ import javafx.scene.shape.Line;
 public class LigneForme implements Forme {
     private final Line ligne;
 
-    public LigneForme() {
-        ligne = new Line(20, 20, 120, 80);
+    public LigneForme(double startX, double startY, double endX, double endY) {
+        ligne = new Line(startX, startY, endX, endY);
         ligne.setStroke(Color.RED);
         ligne.setStrokeWidth(2);
     }
@@ -21,5 +21,13 @@ public class LigneForme implements Forme {
     @Override
     public Node afficher() {
         return ligne;
+    }
+
+    // Method to update end points during dragging
+    public void updateDimensions(double startX, double startY, double endX, double endY) {
+        ligne.setStartX(startX);
+        ligne.setStartY(startY);
+        ligne.setEndX(endX);
+        ligne.setEndY(endY);
     }
 }

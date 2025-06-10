@@ -7,8 +7,8 @@ import javafx.scene.shape.Circle;
 public class CercleForme implements Forme {
     private final Circle cercle;
 
-    public CercleForme() {
-        cercle = new Circle(75, 75, 40);
+    public CercleForme(double centerX, double centerY, double radius) {
+        cercle = new Circle(centerX, centerY, radius);
         cercle.setFill(Color.ORANGE);
         cercle.setStroke(Color.BLACK);
     }
@@ -21,5 +21,15 @@ public class CercleForme implements Forme {
     @Override
     public Node afficher() {
         return cercle;
+    }
+
+    // Method to update radius during dragging
+    public void updateDimensions(double startX, double startY, double endX, double endY) {
+        double dx = endX - startX;
+        double dy = endY - startY;
+        double radius = Math.sqrt(dx * dx + dy * dy) / 2;
+        cercle.setRadius(radius);
+        cercle.setCenterX(startX);
+        cercle.setCenterY(startY);
     }
 }

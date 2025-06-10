@@ -6,28 +6,61 @@
 <AnchorPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.masi.Controller.DrawingController"
-            prefHeight="400.0" prefWidth="600.0">
+            prefHeight="500.0" prefWidth="700.0">
 
     <children>
-        <VBox alignment="CENTER" spacing="10">
+        <VBox alignment="CENTER" spacing="15">
             <padding>
-                <Insets top="10" right="10" bottom="10" left="10"/>
+                <Insets top="15" right="15" bottom="15" left="15"/>
             </padding>
-            <HBox spacing="10" alignment="CENTER">
-                <Label text="Shape:" />
-                <ChoiceBox fx:id="shapeChoice" />
-            </HBox>
-            <HBox spacing="10" alignment="CENTER">
-                <Label text="Logger:" />
-                <ChoiceBox fx:id="logChoice" />
-            </HBox>
-            <HBox spacing="10" alignment="CENTER">
-                <Label text="Decorator:" />
-                <ChoiceBox fx:id="decoratorChoice" />
-            </HBox>
-            <Button text="Draw" onAction="#handleDraw"/>
 
-            <Pane fx:id="drawingPane" prefHeight="300" prefWidth="500" style="-fx-background-color: white; -fx-border-color: black;" />
+            <!-- Titre -->
+            <Label text="Application de Dessin MASI" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+
+            <!-- Zone de contrôles -->
+            <VBox spacing="10" alignment="CENTER">
+                <HBox spacing="15" alignment="CENTER">
+                    <Label text="Forme:" style="-fx-font-weight: bold;"/>
+                    <ChoiceBox fx:id="shapeChoice" prefWidth="120"/>
+                </HBox>
+
+                <HBox spacing="15" alignment="CENTER">
+                    <Label text="Logger:" style="-fx-font-weight: bold;"/>
+                    <ChoiceBox fx:id="logChoice" prefWidth="120"/>
+                </HBox>
+
+                <HBox spacing="15" alignment="CENTER">
+                    <Label text="Décorateur:" style="-fx-font-weight: bold;"/>
+                    <ChoiceBox fx:id="decoratorChoice" prefWidth="120"/>
+                </HBox>
+            </VBox>
+
+            <!-- Boutons d'action -->
+            <HBox spacing="10" alignment="CENTER">
+                <Button fx:id="drawButton" text="Dessiner" onAction="#handleDraw"
+                        style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;"
+                        prefWidth="80"/>
+                <Button fx:id="saveButton" text="Sauvegarder" onAction="#handleSave"
+                        style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;"
+                        prefWidth="100"/>
+                <Button fx:id="loadButton" text="Charger" onAction="#handleLoad"
+                        style="-fx-background-color: #FF9800; -fx-text-fill: white; -fx-font-weight: bold;"
+                        prefWidth="80"/>
+                <Button fx:id="clearButton" text="Effacer" onAction="#handleClear"
+                        style="-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold;"
+                        prefWidth="80"/>
+            </HBox>
+
+            <!-- Zone de dessin -->
+            <VBox alignment="CENTER">
+                <Label text="Zone de Dessin" style="-fx-font-weight: bold;"/>
+                <Pane fx:id="drawingPane" prefHeight="300" prefWidth="600"
+                      style="-fx-background-color: #f8f8f8; -fx-border-color: #333; -fx-border-width: 2px; -fx-border-radius: 5px;" />
+            </VBox>
+
+            <!-- Informations -->
+            <Label text="Cliquez et glissez sur la zone de dessin pour placer et dimensionner une forme. Consultez la console pour les logs détaillés."
+                   style="-fx-font-size: 11px; -fx-text-fill: #666;"/>
         </VBox>
     </children>
 </AnchorPane>
