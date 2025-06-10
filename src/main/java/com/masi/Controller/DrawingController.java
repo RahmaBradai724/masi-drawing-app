@@ -9,7 +9,7 @@ import com.masi.logger.Logger;
 import com.masi.observer.DrawingModel;
 import com.masi.observer.Observer;
 import com.masi.Db.DrawingDAO;
-import com.masi.persistence.DrawingPersistenceStrategy;
+import com.masi.persistence.PersistenceContext;
 import com.masi.persistence.DatabasePersistenceStrategy;
 import javafx.fxml.FXML;
 import javafx.scene.control.ChoiceBox;
@@ -51,13 +51,16 @@ public class DrawingController implements Observer {
     private final DrawingModel model = new DrawingModel();
     private Logger logger;
     private final DrawingDAO drawingDAO = new DrawingDAO();
-    private DrawingPersistenceStrategy persistenceStrategy;
+    private final PersistenceContext persistenceContext;
     private final List<DrawnShape> drawnShapes = new ArrayList<>();
     private Forme currentForme;
     private Node currentShapeNode;
     private double startX, startY;
 
-    // Inner class to store drawn shapes with their properties
+    public DrawingController() {
+        this.persistenceContext = new PersistenceContext(new DatabasePersistenceStrategy());
+    }
+
     public static class DrawnShape {
         private final String type;
         private final double x, y;
@@ -115,9 +118,6 @@ public class DrawingController implements Observer {
         // Set default logger
         setLogger("Console");
 
-        // Set default persistence strategy
-        setPersistenceStrategy("Database");
-
         model.addObserver(this);
 
         // Mouse event handlers for drawing
@@ -125,14 +125,12 @@ public class DrawingController implements Observer {
             startX = event.getX();
             startY = event.getY();
 
-            // Validate coordinates
             if (startX < 0 || startX > drawingPane.getPrefWidth() - 10 || startY < 0 || startY > drawingPane.getPrefHeight() - 10) {
                 showAlert("Erreur", "Le point de départ doit être dans la zone de dessin.");
                 logger.log("Erreur: Point de départ hors limites.");
                 return;
             }
 
-            // Create new shape at start point
             String shapeType = shapeChoice.getValue();
             currentForme = FormeFactory.creerForme(shapeType.toLowerCase(), startX, startY);
             if (currentForme != null) {
@@ -146,12 +144,10 @@ public class DrawingController implements Observer {
                 double endX = event.getX();
                 double endY = event.getY();
 
-                // Validate end coordinates
                 if (endX < 0 || endX > drawingPane.getPrefWidth() || endY < 0 || endY > drawingPane.getPrefHeight()) {
-                    return; // Don't update if out of bounds
+                    return;
                 }
 
-                // Update shape dimensions
                 currentForme.updateDimensions(startX, startY, endX, endY);
             }
         });
@@ -163,7 +159,6 @@ public class DrawingController implements Observer {
                 double endX = event.getX();
                 double endY = event.getY();
 
-                // Validate final coordinates
                 if (endX < 0 || endX > drawingPane.getPrefWidth() || endY < 0 || endY > drawingPane.getPrefHeight()) {
                     drawingPane.getChildren().remove(currentShapeNode);
                     showAlert("Erreur", "Les dimensions doivent être dans la zone de dessin.");
@@ -173,10 +168,8 @@ public class DrawingController implements Observer {
                     return;
                 }
 
-                // Apply decorators
                 applyDecorator(currentShapeNode, decoratorType);
 
-                // Calculate dimensions for saving
                 double width = 0, height = 0;
                 if (shapeType.equalsIgnoreCase("Rectangle")) {
                     width = Math.abs(endX - startX);
@@ -184,23 +177,20 @@ public class DrawingController implements Observer {
                 } else if (shapeType.equalsIgnoreCase("Cercle")) {
                     double dx = endX - startX;
                     double dy = endY - startY;
-                    width = Math.sqrt(dx * dx + dy * dy) / 2; // Radius
-                    height = width; // Store radius as height for simplicity
+                    width = Math.sqrt(dx * dx + dy * dy) / 2;
+                    height = width;
                 } else if (shapeType.equalsIgnoreCase("Ligne")) {
-                    width = endX - startX; // Store delta for line
+                    width = endX - startX;
                     height = endY - startY;
                 }
 
-                // Log and save
                 currentForme.dessiner();
                 String message = String.format("Dessiné %s à (%.0f, %.0f) avec dimensions (%.0f, %.0f) et décorateur: %s",
                         shapeType, startX, startY, width, height, decoratorType);
                 logger.log(message);
 
-                // Save to drawnShapes
                 drawnShapes.add(new DrawnShape(shapeType, startX, startY, width, height, decoratorType));
 
-                // Save to database
                 try {
                     drawingDAO.enregistrerDessin(shapeType, (int)startX, (int)startY, (int)width, (int)height);
                     logger.log("Forme sauvegardée en base de données");
@@ -208,10 +198,7 @@ public class DrawingController implements Observer {
                     logger.log("Erreur sauvegarde DB: " + e.getMessage());
                 }
 
-                // Update model
                 model.setSelectedShape(shapeType);
-
-                // Reset temporary shape
                 currentForme = null;
                 currentShapeNode = null;
             }
@@ -242,14 +229,11 @@ public class DrawingController implements Observer {
     @FXML
     private void handleLoad() {
         try {
-            // Clear current drawing area
             drawingPane.getChildren().clear();
             drawnShapes.clear();
 
-            // Load from database
             List<String> dessins = drawingDAO.chargerDessins();
             for (String dessin : dessins) {
-                // Parse: "ID: 1 | Type: Rectangle | Position: (100, 200) | Dimensions: (50, 30)"
                 String[] parts = dessin.split("\\|");
                 String type = parts[1].split(":")[1].trim();
                 String[] coords = parts[2].split(":")[1].trim().replace("(", "").replace(")", "").split(",");
@@ -259,11 +243,10 @@ public class DrawingController implements Observer {
                 double width = Double.parseDouble(dims[0].trim());
                 double height = Double.parseDouble(dims[1].trim());
 
-                // Recreate shape with stored dimensions
                 Forme forme = FormeFactory.creerForme(type.toLowerCase(), x, y);
                 if (forme != null) {
                     if (type.equalsIgnoreCase("Cercle")) {
-                        forme.updateDimensions(x, y, x + 2 * width, y); // Radius to diameter
+                        forme.updateDimensions(x, y, x + 2 * width, y);
                     } else if (type.equalsIgnoreCase("Ligne")) {
                         forme.updateDimensions(x, y, x + width, y + height);
                     } else {
@@ -291,7 +274,7 @@ public class DrawingController implements Observer {
             return;
         }
 
-        persistenceStrategy.saveDrawing(nomDessin, drawnShapes);
+        persistenceContext.saveDrawing(nomDessin, drawnShapes);
         logger.log("Dessin complet '" + nomDessin + "' sauvegardé.");
         showAlert("Succès", "Dessin complet sauvegardé avec succès!");
     }
@@ -305,14 +288,14 @@ public class DrawingController implements Observer {
             return;
         }
 
-        int dessinId = persistenceStrategy.getDrawingIdByName(nomDessin);
+        int dessinId = persistenceContext.getDrawingIdByName(nomDessin);
         if (dessinId == -1) {
             showAlert("Erreur", "Aucun dessin trouvé avec le nom '" + nomDessin + "'.");
             logger.log("Erreur: Aucun dessin trouvé avec le nom '" + nomDessin + "'.");
             return;
         }
 
-        List<DrawnShape> shapes = persistenceStrategy.loadDrawing(dessinId);
+        List<DrawnShape> shapes = persistenceContext.loadDrawing(dessinId);
         if (!shapes.isEmpty()) {
             drawingPane.getChildren().clear();
             drawnShapes.clear();
@@ -360,9 +343,7 @@ public class DrawingController implements Observer {
                 applyBorderEffect(shapeNode);
                 applyShadowEffect(shapeNode);
                 break;
-            case "None":
             default:
-                // No decoration
                 break;
         }
     }
@@ -403,17 +384,6 @@ public class DrawingController implements Observer {
         logger.log("Logger changé vers: " + type);
     }
 
-    private void setPersistenceStrategy(String type) {
-        switch (type) {
-            case "Database":
-                persistenceStrategy = new DatabasePersistenceStrategy();
-                break;
-            default:
-                persistenceStrategy = new DatabasePersistenceStrategy();
-        }
-        logger.log("Stratégie de persistance changée vers: " + type);
-    }
-
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
@@ -427,7 +397,6 @@ public class DrawingController implements Observer {
         String selectedShape = model.getSelectedShape();
         System.out.println("Observer notifié - Forme sélectionnée: " + selectedShape);
 
-        // Update UI if necessary
         if (!selectedShape.equals("None")) {
             drawButton.setText("Dessiner " + selectedShape);
         } else {
