@@ -8,12 +8,14 @@ import com.masi.logger.FileLogger;
 import com.masi.logger.Logger;
 import com.masi.observer.DrawingModel;
 import com.masi.observer.Observer;
-import com.masi.decorator.*;
 import com.masi.Db.DrawingDAO;
+import com.masi.persistence.DrawingPersistenceStrategy;
+import com.masi.persistence.DatabasePersistenceStrategy;
 import javafx.fxml.FXML;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Button;
 import javafx.scene.control.Alert;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.Pane;
 import javafx.scene.Node;
 import javafx.scene.effect.DropShadow;
@@ -39,29 +41,60 @@ public class DrawingController implements Observer {
     private Button loadButton;
     @FXML
     private Button clearButton;
+    @FXML
+    private TextField drawingNameField;
+    @FXML
+    private Button saveCompleteButton;
+    @FXML
+    private Button loadCompleteButton;
 
     private final DrawingModel model = new DrawingModel();
     private Logger logger;
     private final DrawingDAO drawingDAO = new DrawingDAO();
+    private DrawingPersistenceStrategy persistenceStrategy;
     private final List<DrawnShape> drawnShapes = new ArrayList<>();
-    private Forme currentForme; // Temporary shape being drawn
-    private Node currentShapeNode; // Temporary shape node
-    private double startX, startY; // Starting point of drag
+    private Forme currentForme;
+    private Node currentShapeNode;
+    private double startX, startY;
 
-    // Classe interne pour stocker les formes dessinées avec leurs propriétés
-    private static class DrawnShape {
-        String type;
-        double x, y;
-        double width, height; // For rectangles and circles (radius as height)
-        String decorator;
+    // Inner class to store drawn shapes with their properties
+    public static class DrawnShape {
+        private final String type;
+        private final double x, y;
+        private final double width, height;
+        private final String decorator;
 
-        DrawnShape(String type, double x, double y, double width, double height, String decorator) {
+        public DrawnShape(String type, double x, double y, double width, double height, String decorator) {
             this.type = type;
             this.x = x;
             this.y = y;
             this.width = width;
             this.height = height;
             this.decorator = decorator;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public double getX() {
+            return x;
+        }
+
+        public double getY() {
+            return y;
+        }
+
+        public double getWidth() {
+            return width;
+        }
+
+        public double getHeight() {
+            return height;
+        }
+
+        public String getDecorator() {
+            return decorator;
         }
     }
 
@@ -81,6 +114,10 @@ public class DrawingController implements Observer {
 
         // Set default logger
         setLogger("Console");
+
+        // Set default persistence strategy
+        setPersistenceStrategy("Database");
+
         model.addObserver(this);
 
         // Mouse event handlers for drawing
@@ -165,7 +202,7 @@ public class DrawingController implements Observer {
 
                 // Save to database
                 try {
-                    drawingDAO.enregistrerDessin(shapeType, (int)startX, (int)startY, (int)width, ( int)height);
+                    drawingDAO.enregistrerDessin(shapeType, (int)startX, (int)startY, (int)width, (int)height);
                     logger.log("Forme sauvegardée en base de données");
                 } catch (Exception e) {
                     logger.log("Erreur sauvegarde DB: " + e.getMessage());
@@ -192,7 +229,7 @@ public class DrawingController implements Observer {
     private void handleSave() {
         try {
             for (DrawnShape shape : drawnShapes) {
-                drawingDAO.enregistrerDessin(shape.type, (int)shape.x, (int)shape.y, (int)shape.width, (int)shape.height);
+                drawingDAO.enregistrerDessin(shape.getType(), (int)shape.getX(), (int)shape.getY(), (int)shape.getWidth(), (int)shape.getHeight());
             }
             logger.log("Tous les dessins sauvegardés en base de données (" + drawnShapes.size() + " formes)");
             showAlert("Succès", "Dessins sauvegardés avec succès!");
@@ -242,6 +279,65 @@ public class DrawingController implements Observer {
         } catch (Exception e) {
             logger.log("Erreur lors du chargement: " + e.getMessage());
             showAlert("Erreur", "Erreur lors du chargement: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleSaveComplete() {
+        String nomDessin = drawingNameField.getText().trim();
+        if (nomDessin.isEmpty()) {
+            showAlert("Erreur", "Veuillez entrer un nom pour le dessin.");
+            logger.log("Erreur: Nom du dessin vide lors de la sauvegarde.");
+            return;
+        }
+
+        persistenceStrategy.saveDrawing(nomDessin, drawnShapes);
+        logger.log("Dessin complet '" + nomDessin + "' sauvegardé.");
+        showAlert("Succès", "Dessin complet sauvegardé avec succès!");
+    }
+
+    @FXML
+    private void handleLoadComplete() {
+        String nomDessin = drawingNameField.getText().trim();
+        if (nomDessin.isEmpty()) {
+            showAlert("Erreur", "Veuillez entrer un nom pour le dessin à charger.");
+            logger.log("Erreur: Nom du dessin vide lors du chargement.");
+            return;
+        }
+
+        int dessinId = persistenceStrategy.getDrawingIdByName(nomDessin);
+        if (dessinId == -1) {
+            showAlert("Erreur", "Aucun dessin trouvé avec le nom '" + nomDessin + "'.");
+            logger.log("Erreur: Aucun dessin trouvé avec le nom '" + nomDessin + "'.");
+            return;
+        }
+
+        List<DrawnShape> shapes = persistenceStrategy.loadDrawing(dessinId);
+        if (!shapes.isEmpty()) {
+            drawingPane.getChildren().clear();
+            drawnShapes.clear();
+
+            for (DrawnShape shape : shapes) {
+                Forme forme = FormeFactory.creerForme(shape.getType().toLowerCase(), shape.getX(), shape.getY());
+                if (forme != null) {
+                    if (shape.getType().equalsIgnoreCase("Cercle")) {
+                        forme.updateDimensions(shape.getX(), shape.getY(), shape.getX() + 2 * shape.getWidth(), shape.getY());
+                    } else if (shape.getType().equalsIgnoreCase("Ligne")) {
+                        forme.updateDimensions(shape.getX(), shape.getY(), shape.getX() + shape.getWidth(), shape.getY() + shape.getHeight());
+                    } else {
+                        forme.updateDimensions(shape.getX(), shape.getY(), shape.getX() + shape.getWidth(), shape.getY() + shape.getHeight());
+                    }
+                    Node shapeNode = forme.afficher();
+                    applyDecorator(shapeNode, shape.getDecorator());
+                    drawingPane.getChildren().add(shapeNode);
+                    drawnShapes.add(shape);
+                }
+            }
+            logger.log("Dessin complet '" + nomDessin + "' chargé avec " + shapes.size() + " formes.");
+            showAlert("Succès", "Dessin complet chargé avec succès!");
+        } else {
+            showAlert("Erreur", "Échec du chargement du dessin complet '" + nomDessin + "'.");
+            logger.log("Erreur lors du chargement du dessin complet ID: " + dessinId);
         }
     }
 
@@ -305,6 +401,17 @@ public class DrawingController implements Observer {
                 logger = new ConsoleLogger();
         }
         logger.log("Logger changé vers: " + type);
+    }
+
+    private void setPersistenceStrategy(String type) {
+        switch (type) {
+            case "Database":
+                persistenceStrategy = new DatabasePersistenceStrategy();
+                break;
+            default:
+                persistenceStrategy = new DatabasePersistenceStrategy();
+        }
+        logger.log("Stratégie de persistance changée vers: " + type);
     }
 
     private void showAlert(String title, String message) {

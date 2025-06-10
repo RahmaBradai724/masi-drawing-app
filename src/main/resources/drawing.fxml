@@ -6,7 +6,7 @@
 <AnchorPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.masi.Controller.DrawingController"
-            prefHeight="500.0" prefWidth="700.0">
+            prefHeight="600.0" prefWidth="700.0">
 
     <children>
         <VBox alignment="CENTER" spacing="15">
@@ -33,6 +33,11 @@
                     <Label text="Décorateur:" style="-fx-font-weight: bold;"/>
                     <ChoiceBox fx:id="decoratorChoice" prefWidth="120"/>
                 </HBox>
+
+                <HBox spacing="15" alignment="CENTER">
+                    <Label text="Nom du dessin:" style="-fx-font-weight: bold;"/>
+                    <TextField fx:id="drawingNameField" promptText="Nom du dessin" prefWidth="200"/>
+                </HBox>
             </VBox>
 
             <!-- Boutons d'action -->
@@ -49,6 +54,12 @@
                 <Button fx:id="clearButton" text="Effacer" onAction="#handleClear"
                         style="-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold;"
                         prefWidth="80"/>
+                <Button fx:id="saveCompleteButton" text="Sauvegarder Dessin" onAction="#handleSaveComplete"
+                        style="-fx-background-color: #3F51B5; -fx-text-fill: white; -fx-font-weight: bold;"
+                        prefWidth="120"/>
+                <Button fx:id="loadCompleteButton" text="Charger Dessin" onAction="#handleLoadComplete"
+                        style="-fx-background-color: #FFC107; -fx-text-fill: white; -fx-font-weight: bold;"
+                        prefWidth="100"/>
             </HBox>
 
             <!-- Zone de dessin -->
