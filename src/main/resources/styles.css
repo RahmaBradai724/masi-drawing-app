@@ -1,0 +1,50 @@
+/* Global styles */
+.root {
+    -fx-font-family: 'Segoe UI', Arial, sans-serif;
+    -fx-font-size: 14px;
+}
+
+/* Button styles */
+.button {
+    -fx-background-color: #4a90e2;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 10 20;
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #3a80d2;
+}
+
+.button:pressed {
+    -fx-background-color: #2a70c2;
+}
+
+/* ChoiceBox styles */
+.choice-box {
+    -fx-background-color: white;
+    -fx-border-color: #cccccc;
+    -fx-border-radius: 3px;
+    -fx-padding: 5px;
+}
+
+.choice-box:hover {
+    -fx-border-color: #4a90e2;
+}
+
+/* Label styles */
+.label {
+    -fx-text-fill: #333333;
+}
+
+/* Drawing pane */
+#drawingPane {
+    -fx-background-color: white;
+    -fx-border-color: #dddddd;
+    -fx-border-width: 1px;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 10);
+}
